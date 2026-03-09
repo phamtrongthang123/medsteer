@@ -98,6 +98,71 @@ pip install xformers
 
 ---
 
+## Notebook Demo
+
+Run the cell below in Google Colab or any Jupyter environment (GPU recommended).
+
+```python
+# ── 0. Install ────────────────────────────────────────────────────────────────
+# Clone the repo and install the vendored diffusers fork + medsteer
+# (run once, then restart the kernel)
+import subprocess, sys
+
+subprocess.run(["git", "clone", "https://github.com/phamtrongthang123/medsteer"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-e", "medsteer/diffusers/"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-e", "medsteer/"], check=True)
+
+# ── 1. Download the LoRA checkpoint from the Hub ──────────────────────────────
+from huggingface_hub import snapshot_download
+
+lora_path = snapshot_download(
+    repo_id="phamtrongthang/medsteer",
+    local_dir="medsteer_ckpt",
+)
+# lora_path now contains  transformer_lora/  and  text_encoder_lora/
+
+# ── 2. Load the model ─────────────────────────────────────────────────────────
+import torch
+from medsteer import MedSteerPipeline
+
+pipe = MedSteerPipeline.from_pretrained(
+    model_id="PixArt-alpha/PixArt-XL-2-512x512",
+    lora_path=lora_path,
+    device="cuda" if torch.cuda.is_available() else "cpu",
+    dtype=torch.bfloat16,
+)
+
+# ── 3. Baseline generation ────────────────────────────────────────────────────
+image = pipe.generate(
+    prompt="An endoscopic image of dyed lifted polyps",
+    seed=42,
+    num_steps=20,
+    mode="baseline",
+)
+image.save("baseline.png")
+image  # display inline in Jupyter
+
+# ── 4. Steered generation (suppress polyp features) ──────────────────────────
+# Requires precomputed direction vectors (.pickle).
+# Compute them with scripts/compute_directions.py after capturing activations,
+# or download a precomputed file if provided in the repository.
+#
+# directions_path = "path/to/directions.pickle"
+# steered = pipe.generate(
+#     prompt="An endoscopic image of dyed lifted polyps",
+#     seed=42,
+#     mode="suppress",
+#     direction_vectors_path=directions_path,
+#     suppress_scale=2.0,
+# )
+# steered.save("steered.png")
+```
+
+> **Tip:** `suppress_scale` controls steering strength. Values 1–3 work well;
+> start with `2.0` and increase to remove more pathological features.
+
+---
+
 ## Usage
 
 ### Quick Demo
