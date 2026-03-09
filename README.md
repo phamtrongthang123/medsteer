@@ -148,7 +148,6 @@ pipe = MedSteerPipeline.from_pretrained(
     model_id="PixArt-alpha/PixArt-XL-2-512x512",
     lora_path=lora_path,
     device="cuda" if torch.cuda.is_available() else "cpu",
-    dtype=torch.bfloat16,
 )
 
 # ── 3. Baseline generation ────────────────────────────────────────────────────
