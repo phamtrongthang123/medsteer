@@ -100,21 +100,43 @@ pip install xformers
 
 ## Notebook Demo
 
-Run the cell below in Google Colab or any Jupyter environment (GPU recommended).
+Run the cells below in Google Colab or any Jupyter environment (GPU recommended).
 
+**Cell 1 — install** (run once; no restart needed)
 ```python
-# ── 0. Install ────────────────────────────────────────────────────────────────
-# Clone the repo and install the vendored diffusers fork + medsteer
-# (run once, then restart the kernel)
 import subprocess, sys
 
 subprocess.run(["git", "clone", "https://github.com/phamtrongthang123/medsteer"], check=True)
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--force-reinstall", "--no-deps", "medsteer/diffusers/"], check=True)
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "medsteer/"], check=True)
+
+# Install the vendored diffusers fork without touching other packages
+subprocess.run([
+    sys.executable, "-m", "pip", "install", "-q",
+    "--no-deps", "medsteer/diffusers/",
+], check=True)
+
+# Install medsteer + remaining deps (peft, timm, …)
+# Pin transformers to a version that still exports FLAX_WEIGHTS_NAME
+subprocess.run([
+    sys.executable, "-m", "pip", "install", "-q",
+    "transformers>=4.41.2,<4.46",
+    "medsteer/",
+], check=True)
+```
+
+**Cell 2 — load and generate**
+```python
+import torch
+
+# Compatibility shim: newer transformers removed FLAX_WEIGHTS_NAME.
+# Patch it back before any diffusers code is imported.
+import transformers.utils as _tu
+if not hasattr(_tu, "FLAX_WEIGHTS_NAME"):
+    _tu.FLAX_WEIGHTS_NAME = "diffusion_flax_model.msgpack"
+
+from huggingface_hub import snapshot_download
+from medsteer import MedSteerPipeline
 
 # ── 1. Download the LoRA checkpoint from the Hub ──────────────────────────────
-from huggingface_hub import snapshot_download
-
 lora_path = snapshot_download(
     repo_id="phamtrongthang/medsteer",
     local_dir="medsteer_ckpt",
@@ -122,9 +144,6 @@ lora_path = snapshot_download(
 # lora_path now contains  transformer_lora/  and  text_encoder_lora/
 
 # ── 2. Load the model ─────────────────────────────────────────────────────────
-import torch
-from medsteer import MedSteerPipeline
-
 pipe = MedSteerPipeline.from_pretrained(
     model_id="PixArt-alpha/PixArt-XL-2-512x512",
     lora_path=lora_path,
