@@ -109,7 +109,7 @@ Run the cell below in Google Colab or any Jupyter environment (GPU recommended).
 import subprocess, sys
 
 subprocess.run(["git", "clone", "https://github.com/phamtrongthang123/medsteer"], check=True)
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "medsteer/diffusers/"], check=True)
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--force-reinstall", "--no-deps", "medsteer/diffusers/"], check=True)
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "medsteer/"], check=True)
 
 # ── 1. Download the LoRA checkpoint from the Hub ──────────────────────────────
